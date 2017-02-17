@@ -12,6 +12,7 @@ import android.widget.Toast;
 import java.util.List;
 
 import pub.devrel.easypermissions.AfterPermissionGranted;
+import pub.devrel.easypermissions.AppSettingsDialog;
 import pub.devrel.easypermissions.EasyPermissions;
 
 public class MainActivity extends AppCompatActivity implements EasyPermissions.PermissionCallbacks {
@@ -26,20 +27,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
     }
 
     public void onClick(View view) {
-        switch (view.getId()) {
-            case R.id.test_scan_qrcode:
-                startActivity(new Intent(this, TestScanActivity.class));
-                break;
-            case R.id.test_generate_qrcode:
-                startActivity(new Intent(this, TestGeneratectivity.class));
-                break;
-        }
-    }
-
-    @Override
-    protected void onStart() {
-        super.onStart();
-        requestCodeQRCodePermissions();
+        requestCodeQRCodePermissions(view.getId());
     }
 
     /**
@@ -88,6 +76,13 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
         for (String str : perms) {
             Log.d(TAG, "Denied" + str);
         }
+
+        // (Optional) Check whether the user denied any permissions and checked "NEVER ASK AGAIN."
+        // This will display a dialog directing them to enable the permission in app settings.
+        if (EasyPermissions.somePermissionPermanentlyDenied(this, perms)) {
+            new AppSettingsDialog.Builder(this).build().show();
+        }
+
         Toast.makeText(MainActivity.this, "onPermissionsDenied", Toast.LENGTH_SHORT).show();
     }
 
@@ -95,9 +90,18 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
      * 启动授权，
      */
     @AfterPermissionGranted(REQUEST_CODE_QRCODE_PERMISSIONS)
-    private void requestCodeQRCodePermissions() {
+    private void requestCodeQRCodePermissions(int viewId) {
         String[] perms = {Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE};
-        if (!EasyPermissions.hasPermissions(this, perms)) {
+        if (EasyPermissions.hasPermissions(this, perms)) {
+            switch (viewId) {
+                case R.id.test_scan_qrcode:
+                    startActivity(new Intent(this, TestScanActivity.class));
+                    break;
+                case R.id.test_generate_qrcode:
+                    startActivity(new Intent(this, TestGeneratectivity.class));
+                    break;
+            }
+        } else {
             EasyPermissions.requestPermissions(this, "扫描二维码需要打开相机和散光灯的权限", REQUEST_CODE_QRCODE_PERMISSIONS, perms);
         }
     }

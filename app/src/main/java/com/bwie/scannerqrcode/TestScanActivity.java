@@ -12,33 +12,47 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Toast;
 
-//import cn.bingoogolapple.photopicker.activity.BGAPhotoPickerActivity;
+import cn.bingoogolapple.photopicker.activity.BGAPhotoPickerActivity;
 import cn.bingoogolapple.qrcode.core.QRCodeView;
 import cn.bingoogolapple.qrcode.zxing.QRCodeDecoder;
 import cn.bingoogolapple.qrcode.zxing.ZXingView;
 
+/**
+ * 实现QRCodeView.Delegate
+ */
 public class TestScanActivity extends AppCompatActivity implements QRCodeView.Delegate {
     private static final String TAG = TestScanActivity.class.getSimpleName();
     private static final int REQUEST_CODE_CHOOSE_QRCODE_FROM_GALLERY = 666;
 
+    /**
+     * 第一步 QRCodeView
+     */
     private QRCodeView mQRCodeView;
 
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_test_scan);
         setSupportActionBar((Toolbar) findViewById(R.id.toolbar));
+        initView();
+    }
 
+    /**
+     * 初始化视图
+     */
+    private void initView() {
         mQRCodeView = (ZXingView) findViewById(R.id.zxingview);
-        mQRCodeView.setDelegate(this);
+        mQRCodeView.setDelegate(this);//设置注册Delegate
     }
 
     @Override
     protected void onStart() {
         super.onStart();
-        mQRCodeView.startCamera();
+        mQRCodeView.startCamera();//启动相机
 //        mQRCodeView.startCamera(Camera.CameraInfo.CAMERA_FACING_FRONT);
+        mQRCodeView.showScanRect();//显示扫描矩形框
 
-        mQRCodeView.showScanRect();
+        //开始识别
+        mQRCodeView.startSpot();
     }
 
     @Override
@@ -53,6 +67,9 @@ public class TestScanActivity extends AppCompatActivity implements QRCodeView.De
         super.onDestroy();
     }
 
+    /**
+     * 震动
+     */
     private void vibrate() {
         Vibrator vibrator = (Vibrator) getSystemService(VIBRATOR_SERVICE);
         vibrator.vibrate(200);
@@ -103,10 +120,10 @@ public class TestScanActivity extends AppCompatActivity implements QRCodeView.De
             case R.id.close_flashlight:
                 mQRCodeView.closeFlashlight();
                 break;
-            case R.id.scan_barcode:
+            case R.id.scan_barcode://扫条形码
                 mQRCodeView.changeToScanBarcodeStyle();
                 break;
-            case R.id.scan_qrcode:
+            case R.id.scan_qrcode://扫二维码
                 mQRCodeView.changeToScanQRCodeStyle();
                 break;
             case R.id.choose_qrcde_from_gallery:
@@ -116,7 +133,7 @@ public class TestScanActivity extends AppCompatActivity implements QRCodeView.De
                 https://github.com/bingoogolapple/BGAPhotoPicker-Android
                 这个库来从图库中选择二维码图片，这个库不是必须的，你也可以通过自己的方式从图库中选择图片
                  */
-//                startActivityForResult(BGAPhotoPickerActivity.newIntent(this, null, 1, null, false), REQUEST_CODE_CHOOSE_QRCODE_FROM_GALLERY);
+                startActivityForResult(BGAPhotoPickerActivity.newIntent(this, null, 1, null, false), REQUEST_CODE_CHOOSE_QRCODE_FROM_GALLERY);
                 break;
         }
     }
@@ -128,29 +145,29 @@ public class TestScanActivity extends AppCompatActivity implements QRCodeView.De
         mQRCodeView.showScanRect();
 
         //TODO 相册选取二维码图片
-//        if (resultCode == Activity.RESULT_OK && requestCode == REQUEST_CODE_CHOOSE_QRCODE_FROM_GALLERY) {
-//            final String picturePath = BGAPhotoPickerActivity.getSelectedImages(data).get(0);
-//
-//            /*
-//            这里为了偷懒，就没有处理匿名 AsyncTask 内部类导致 Activity 泄漏的问题
-//            请开发在使用时自行处理匿名内部类导致Activity内存泄漏的问题，处理方式可参考 https://github.com/GeniusVJR/LearningNotes/blob/master/Part1/Android/Android%E5%86%85%E5%AD%98%E6%B3%84%E6%BC%8F%E6%80%BB%E7%BB%93.md
-//             */
-//            new AsyncTask<Void, Void, String>() {
-//                @Override
-//                protected String doInBackground(Void... params) {
-//                    return QRCodeDecoder.syncDecodeQRCode(picturePath);
-//                }
-//
-//                @Override
-//                protected void onPostExecute(String result) {
-//                    if (TextUtils.isEmpty(result)) {
-//                        Toast.makeText(TestScanActivity.this, "未发现二维码", Toast.LENGTH_SHORT).show();
-//                    } else {
-//                        Toast.makeText(TestScanActivity.this, result, Toast.LENGTH_SHORT).show();
-//                    }
-//                }
-//            }.execute();
-//        }
+        if (resultCode == Activity.RESULT_OK && requestCode == REQUEST_CODE_CHOOSE_QRCODE_FROM_GALLERY) {
+            final String picturePath = BGAPhotoPickerActivity.getSelectedImages(data).get(0);
+
+            /*
+            这里为了偷懒，就没有处理匿名 AsyncTask 内部类导致 Activity 泄漏的问题
+            请开发在使用时自行处理匿名内部类导致Activity内存泄漏的问题，处理方式可参考 https://github.com/GeniusVJR/LearningNotes/blob/master/Part1/Android/Android%E5%86%85%E5%AD%98%E6%B3%84%E6%BC%8F%E6%80%BB%E7%BB%93.md
+             */
+            new AsyncTask<String, Void, String>() {
+                @Override
+                protected String doInBackground(String... params) {
+                    return QRCodeDecoder.syncDecodeQRCode(params[0]);
+                }
+
+                @Override
+                protected void onPostExecute(String result) {
+                    if (TextUtils.isEmpty(result)) {
+                        Toast.makeText(TestScanActivity.this, "未发现二维码", Toast.LENGTH_SHORT).show();
+                    } else {
+                        Toast.makeText(TestScanActivity.this, result, Toast.LENGTH_SHORT).show();
+                    }
+                }
+            }.execute(picturePath);
+        }
     }
 
 
